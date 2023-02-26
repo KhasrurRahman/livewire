@@ -5,15 +5,22 @@ namespace App\Http\Livewire;
 use App\Models\Comment;
 use Illuminate\Support\Carbon;
 use Livewire\Component;
+use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class Comments extends Component
 {
 
-    public $comments;
-    public $newcomment = "";
+    use WithPagination;
+    use WithFileUploads;
+
+
+    public $newcomment;
+    public $image;
 
     protected $rules = [
         'newcomment' => 'required|max:255',
+        'image' => 'required|image|max:1024',
     ];
 
     public function updated()
@@ -21,10 +28,6 @@ class Comments extends Component
         $this->validate();
     }
 
-    public function mount()
-    {
-        $this->comments = Comment::all();
-    }
 
     public function all_comments()
     {
@@ -34,23 +37,24 @@ class Comments extends Component
     public function delete_comment($commentID)
     {
         Comment::find($commentID)->delete();
-        $this->comments = $this->comments->where('id', '!==', $commentID);
+        session()->flash('message', 'Comment Deleted successfully.');
     }
-
 
     public function addcomment()
     {
         $this->validate();
         $create_comment = Comment::create(['body' => $this->newcomment, 'user_id' => 1]);
-
-        $this->comments->prepend($create_comment);
-
         $this->newcomment = '';
+        session()->flash('message', 'Comment added successfully.');
     }
 
 
     public function render()
     {
-        return view('livewire.comments');
+        return view('livewire.comments',
+        [
+            'comments' => Comment::latest()->paginate(2)
+        ]
+    );
     }
 }
